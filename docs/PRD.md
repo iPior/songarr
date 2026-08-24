@@ -78,7 +78,6 @@ The following are explicitly excluded from the MVP:
 
 - Playback or audio preview.
 - Navidrome integration.
-- Rekordbox integration or Rekordbox XML generation.
 - SMB, SFTP, Syncthing, or desktop-client configuration.
 - Copying files to another computer.
 - Spotify, Apple Music, YouTube Music, or playlist integrations.
@@ -93,7 +92,6 @@ The following are explicitly excluded from the MVP:
 - Transcoding or format conversion.
 - Quality upgrades or replacement of existing tracks.
 - Multi-user accounts, roles, request quotas, or public registration.
-- External SSO.
 - Notifications.
 - Usenet download clients.
 - Download clients other than qBittorrent.
