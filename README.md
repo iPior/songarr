@@ -48,13 +48,11 @@ The first version will intentionally keep release and file selection manual. Mus
 
 ## Out of scope for the MVP
 
-Songarr is not initially intended to provide:
+Songarr is not intended to provide:
 
 - Music playback
 - Full artist or album management
 - Spotify or playlist synchronization
-- Rekordbox integration
-- Automatic transfer to another computer
 - Automatic release selection
 - Audio transcoding
 - Multi-user request management
