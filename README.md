@@ -59,13 +59,32 @@ Songarr is not intended to provide:
 
 The MVP ends when a validated copy of the requested track appears in the configured server-side `ready` folder. Rekordbox, desktop synchronization, SMB, and other downstream workflows can be developed independently.
 
+## Technical spike
+
+A command-line proof of concept for the acquisition pipeline lives in `src/spike/`. It runs the
+whole chain - Prowlarr search, manual release selection, add stopped under a Songarr-owned
+category and tag, wait for metadata, manual file selection, disable unwanted files, download,
+`ffprobe` validation, atomic copy into the ready folder - against a real Prowlarr and a real,
+shared qBittorrent.
+
+```bash
+npm install
+cp .env.example .env   # fill in your own values; .env is gitignored
+npm run spike -- --check
+npm run spike -- --artist "Daft Punk" --title "Around the World"
+npm test
+```
+
+See [docs/spike.md](docs/spike.md) for setup, what the spike established about the Prowlarr and
+qBittorrent APIs, and what it deliberately does not implement.
+
 ## Documentation
 
 The complete MVP requirements, architecture, workflows, state model, API outline, and acceptance criteria are documented in the [Product Requirements Document](docs/PRD.md).
 
 ## Project status
 
-The current focus is validating the product design and implementing the smallest reliable proof of concept. The PRD is the source of truth for MVP scope.
+The current focus is validating the product design and implementing the smallest reliable proof of concept. The PRD is the source of truth for MVP scope. The acquisition pipeline spike is the first piece of working code; the application shell described in PRD Phase 1 has not been started.
 
 ## Responsible use
 
