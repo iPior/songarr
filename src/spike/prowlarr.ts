@@ -43,6 +43,8 @@ export interface ProwlarrSystemStatus {
   appName?: string;
 }
 
+export type TorrentFetchResult = { kind: 'file'; bytes: Uint8Array } | { kind: 'magnet'; url: string };
+
 export interface ProwlarrClientOptions {
   baseUrl: string;
   apiKey: string;
@@ -137,23 +139,57 @@ export class ProwlarrClient {
    * added from a file already carries its metadata - which is what lets the torrent stay
    * stopped while the user picks a file. See docs/spike.md.
    */
-  async fetchTorrentFile(release: ProwlarrRelease): Promise<Uint8Array> {
+  async fetchTorrentFile(release: ProwlarrRelease): Promise<TorrentFetchResult> {
     if (!release.downloadUrl) {
       throw new ProwlarrError('RELEASE_HAS_NO_TORRENT_FILE', `Release "${release.title}" has no .torrent URL`);
     }
 
     this.logger.debug('fetching torrent file', { release: release.title });
 
-    let response: Response;
-    try {
-      response = await this.fetchImpl(release.downloadUrl, {
-        headers: { 'X-Api-Key': this.apiKey },
-        redirect: 'follow',
-        signal: AbortSignal.timeout(this.timeoutMs),
-      });
-    } catch (error) {
-      const reason = error instanceof Error ? error.message : String(error);
-      throw new ProwlarrError('TORRENT_FETCH_FAILED', `Could not fetch the .torrent file: ${reason}`);
+    let currentUrl = release.downloadUrl;
+    let response: Response | null = null;
+
+    // Prowlarr may answer its /download endpoint with a magnet redirect. Fetch cannot follow
+    // a non-HTTP scheme, so walk redirects manually and return the magnet to qBittorrent.
+    // Do not forward Prowlarr's API key to a cross-origin indexer redirect.
+    for (let redirects = 0; redirects <= 5; redirects += 1) {
+      let parsedUrl: URL;
+      try {
+        parsedUrl = new URL(currentUrl);
+      } catch {
+        throw new ProwlarrError('TORRENT_FETCH_FAILED', 'Prowlarr returned an invalid download redirect');
+      }
+
+      if (parsedUrl.protocol === 'magnet:') return { kind: 'magnet', url: currentUrl };
+      if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+        throw new ProwlarrError(
+          'TORRENT_FETCH_FAILED',
+          `Prowlarr redirected to unsupported scheme "${parsedUrl.protocol}"`,
+        );
+      }
+
+      try {
+        response = await this.fetchImpl(currentUrl, {
+          headers: parsedUrl.origin === new URL(this.baseUrl).origin ? { 'X-Api-Key': this.apiKey } : {},
+          redirect: 'manual',
+          signal: AbortSignal.timeout(this.timeoutMs),
+        });
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error);
+        throw new ProwlarrError('TORRENT_FETCH_FAILED', `Could not fetch the .torrent file: ${reason}`);
+      }
+
+      if (response.status < 300 || response.status >= 400) break;
+
+      const location = response.headers.get('location');
+      if (!location) {
+        throw new ProwlarrError('TORRENT_FETCH_FAILED', 'Prowlarr returned a redirect without a location');
+      }
+      currentUrl = new URL(location, currentUrl).toString();
+    }
+
+    if (!response || (response.status >= 300 && response.status < 400)) {
+      throw new ProwlarrError('TORRENT_FETCH_FAILED', 'Prowlarr returned too many download redirects');
     }
 
     if (!response.ok) {
@@ -175,7 +211,7 @@ export class ProwlarrClient {
       );
     }
 
-    return bytes;
+    return { kind: 'file', bytes };
   }
 }
 

@@ -33,6 +33,8 @@ export interface FakeProwlarrOptions {
   releases: FakeRelease[] | ((baseUrl: string) => FakeRelease[]);
   /** Serve something that is not a bencoded torrent, e.g. an HTML error page. */
   downloadReturnsHtml?: boolean;
+  /** Redirect the download endpoint to a magnet, as some Prowlarr indexers do. */
+  downloadRedirectsToMagnet?: boolean;
   version?: string;
 }
 
@@ -79,6 +81,13 @@ export async function startFakeProwlarr(options: FakeProwlarrOptions): Promise<F
 
     if (url.pathname.startsWith('/download/')) {
       downloads += 1;
+      if (options.downloadRedirectsToMagnet) {
+        res.writeHead(302, {
+          Location: 'magnet:?xt=urn:btih:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&dn=Homework',
+        });
+        res.end();
+        return;
+      }
       if (options.downloadReturnsHtml) {
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end('<html><body>Rate limited</body></html>');

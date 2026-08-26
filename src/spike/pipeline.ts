@@ -334,7 +334,12 @@ async function resolveTorrentSource(
 ): Promise<TorrentSource> {
   if (release.downloadUrl) {
     try {
-      return { kind: 'file', bytes: await prowlarr.fetchTorrentFile(release) };
+      const fetched = await prowlarr.fetchTorrentFile(release);
+      if (fetched.kind === 'magnet') {
+        logger.info('Prowlarr download endpoint redirected to a magnet link');
+        return { kind: 'url', url: fetched.url, isMagnet: true };
+      }
+      return fetched;
     } catch (error) {
       if (!(error instanceof ProwlarrError)) throw error;
       logger.warn(`could not fetch the .torrent file (${error.code}); falling back to a URL`);

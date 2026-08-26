@@ -51,6 +51,7 @@ interface HarnessOptions {
   files?: FakeFile[];
   magnetOnly?: boolean;
   downloadReturnsHtml?: boolean;
+  downloadRedirectsToMagnet?: boolean;
   webApiVersion?: string;
   pollsToComplete?: number;
   /** Skip materialising the completed file, to test the missing-source path. */
@@ -78,7 +79,7 @@ async function harness(options: HarnessOptions = {}): Promise<Harness> {
   const qbittorrent = await startFakeQbittorrent({
     savePath: downloadRoot,
     addedFiles: files,
-    addedMetadataPending: options.magnetOnly ?? false,
+    addedMetadataPending: options.magnetOnly || options.downloadRedirectsToMagnet || false,
     webApiVersion: options.webApiVersion,
     pollsToComplete: options.pollsToComplete ?? 2,
     seedTorrents: [
@@ -119,6 +120,7 @@ async function harness(options: HarnessOptions = {}): Promise<Harness> {
 
   const prowlarr = await startFakeProwlarr({
     downloadReturnsHtml: options.downloadReturnsHtml ?? false,
+    downloadRedirectsToMagnet: options.downloadRedirectsToMagnet ?? false,
     releases: (baseUrl) =>
       options.magnetOnly
         ? [
@@ -291,6 +293,19 @@ describe('acquisition pipeline (end to end)', () => {
     assert.ok(starts[0]! < stopIndex, 'the metadata start precedes the stop');
     assert.ok(stopIndex < firstPrio, 'priorities are set only after the torrent is stopped again');
     assert.ok(firstPrio < starts[1]!, 'the real start comes after priorities');
+  });
+
+  test('passes a Prowlarr magnet redirect directly to qBittorrent', async () => {
+    const h = await harness({ downloadRedirectsToMagnet: true });
+
+    await runPipeline(h.input, {
+      ...h.deps,
+      prompter: createScriptedPrompter({ selections: [acceptRecommended, acceptRecommended] }),
+    });
+
+    assert.ok(h.prowlarr.downloads > 0, 'Songarr follows the selected Prowlarr download endpoint');
+    assert.ok(h.qbittorrent.calls.includes('add:url'), 'the redirected magnet is submitted as a URL');
+    assert.ok(h.qbittorrent.calls.includes('stop'), 'the magnet is stopped again after metadata arrives');
   });
 
   test('never uploads a non-bencoded .torrent response as torrent bytes', async () => {
