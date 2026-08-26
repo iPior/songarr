@@ -60,7 +60,7 @@ with `SOURCE_MISSING` and a message saying exactly that.
 Check connectivity, credentials and path permissions without touching anything:
 
 ```bash
-pnpm spike -- --check
+pnpm spike --check
 ```
 
 ```
@@ -72,8 +72,8 @@ Paths       ok  downloads=/data/downloads ready=/data/ready
 Then run the pipeline:
 
 ```bash
-pnpm spike -- --artist "Daft Punk" --title "Around the World"
-pnpm spike -- --artist "Daft Punk" --title "Around the World" --version "Radio Edit" --quality flac
+pnpm spike --artist "Daft Punk" --title "Around the World"
+pnpm spike --artist "Daft Punk" --title "Around the World" --version "Radio Edit" --quality flac
 ```
 
 Selection prompts are on stdout and logs on stderr, so `2>/dev/null` gives a clean interactive
@@ -87,8 +87,8 @@ cannot: they open the finished file, which only exists where qBittorrent wrote i
 stops after the download instead of failing at validation:
 
 ```bash
-pnpm spike -- --check --skip-publish
-pnpm spike -- --artist "Daft Punk" --title "Around the World" --skip-publish
+pnpm spike --check --skip-publish
+pnpm spike --artist "Daft Punk" --title "Around the World" --skip-publish
 ```
 
 In this mode `SONGARR_DOWNLOAD_ROOT` is still sent to qBittorrent as its save path, so it must

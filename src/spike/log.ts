@@ -59,8 +59,8 @@ export function redactString(input: string): string {
     }
   });
 
-  // Cookie headers, e.g. qBittorrent's SID.
-  out = out.replace(/\b(SID|Cookie|Set-Cookie)\s*[:=]\s*[^;\s,]+/gi, '$1=[REDACTED]');
+  // Cookie headers, including qBittorrent's legacy and current session names.
+  out = out.replace(/\b(QBT_SID_[A-Za-z0-9_-]+|SID|Cookie|Set-Cookie)\s*[:=]\s*[^;\s,]+/gi, '$1=[REDACTED]');
 
   return out;
 }

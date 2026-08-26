@@ -70,8 +70,8 @@ shared qBittorrent.
 ```bash
 pnpm install
 cp .env.example .env   # fill in your own values; .env is gitignored
-pnpm spike -- --check
-pnpm spike -- --artist "Daft Punk" --title "Around the World"
+pnpm spike --check
+pnpm spike --artist "Daft Punk" --title "Around the World"
 pnpm test
 ```
 

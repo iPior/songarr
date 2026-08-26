@@ -1,7 +1,7 @@
 /**
  * Spike CLI entry point.
  *
- *   pnpm spike -- --artist "Daft Punk" --title "Around the World" --version "Radio Edit"
+ *   pnpm spike --artist "Daft Punk" --title "Around the World" --version "Radio Edit"
  *
  * See docs/spike.md for setup and what this does and does not prove.
  */
@@ -21,7 +21,7 @@ const USAGE = `
 Songarr acquisition-pipeline spike
 
 Usage:
-  pnpm spike -- --artist <artist> --title <title> [options]
+  pnpm spike --artist <artist> --title <title> [options]
 
 Options:
   --artist <name>      Required. Requested artist.
@@ -47,8 +47,13 @@ interface CliOptions {
 }
 
 function parseCliArgs(argv: readonly string[]): CliOptions | null {
+  // `pnpm spike --check` is the native pnpm form, but npm-style invocations may include an
+  // explicit separator (`pnpm spike -- --check`). pnpm forwards that separator to this
+  // script, so discard only a leading standalone `--` and support both forms.
+  const args = argv[0] === '--' ? argv.slice(1) : [...argv];
+
   const { values } = parseArgs({
-    args: [...argv],
+    args,
     options: {
       artist: { type: 'string' },
       title: { type: 'string' },

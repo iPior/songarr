@@ -118,7 +118,7 @@ export class QbittorrentClient {
   private readonly timeoutMs: number;
   private readonly fetchImpl: typeof fetch;
 
-  /** qBittorrent authenticates with an SID cookie; we keep it rather than re-logging in. */
+  /** qBittorrent authenticates with a session cookie; we keep it rather than re-logging in. */
   private cookie: string | null = null;
   private capabilities: Capabilities | null = null;
 
@@ -216,11 +216,10 @@ export class QbittorrentClient {
       throw new QbittorrentError('QBITTORRENT_UNAUTHORIZED', 'qBittorrent rejected the username or password');
     }
 
-    const setCookie = response.headers.get('set-cookie');
-    const sid = setCookie?.match(/SID=([^;]+)/)?.[1];
-    if (sid) {
-      this.cookie = `SID=${sid}`;
-    } else if (text.toLowerCase() === 'ok.') {
+    const sessionCookie = extractSessionCookie(response.headers);
+    if (sessionCookie) {
+      this.cookie = sessionCookie;
+    } else if (text.toLowerCase() === 'ok.' || response.status === 204) {
       // Bypassed auth for localhost is configured; no cookie is issued and none is needed.
       this.logger.debug('logged in without a session cookie (auth bypass is enabled)');
       this.cookie = null;
@@ -400,6 +399,23 @@ export class QbittorrentClient {
 
     this.logger.info(`torrent ${action}ed`, { hash: claim.hash });
   }
+}
+
+/**
+ * qBittorrent 5.2 replaced the fixed `SID` name with a port-scoped `QBT_SID_<port>` name.
+ * Preserve only the session cookie's name/value pair, never its attributes or an unrelated
+ * reverse-proxy cookie. `getSetCookie` keeps multiple headers separate on newer Node versions;
+ * `get` is the compatibility fallback.
+ */
+export function extractSessionCookie(headers: Headers): string | null {
+  const withSetCookie = headers as Headers & { getSetCookie?: () => string[] };
+  const values = withSetCookie.getSetCookie?.() ?? [headers.get('set-cookie')].filter((value) => value !== null);
+
+  for (const value of values) {
+    const pair = value.split(';', 1)[0]?.trim() ?? '';
+    if (/^(?:SID|QBT_SID_[A-Za-z0-9_-]+)=.+$/i.test(pair)) return pair;
+  }
+  return null;
 }
 
 /** qBittorrent states that mean the torrent will never finish without intervention. */

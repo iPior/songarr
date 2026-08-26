@@ -3,12 +3,30 @@ import test, { describe } from 'node:test';
 
 import {
   compareVersions,
+  extractSessionCookie,
   FilePriority,
   isErrorState,
   isFileComplete,
   isMetadataState,
   resolveCapabilities,
 } from '../src/spike/qbittorrent.ts';
+
+describe('extractSessionCookie', () => {
+  test('accepts the legacy fixed SID cookie', () => {
+    const headers = new Headers({ 'Set-Cookie': 'SID=legacy-session; HttpOnly; path=/' });
+    assert.equal(extractSessionCookie(headers), 'SID=legacy-session');
+  });
+
+  test('accepts the qBittorrent 5.2 port-scoped session cookie', () => {
+    const headers = new Headers({ 'Set-Cookie': 'QBT_SID_8701=current-session; HttpOnly; path=/' });
+    assert.equal(extractSessionCookie(headers), 'QBT_SID_8701=current-session');
+  });
+
+  test('does not retain an unrelated reverse-proxy cookie', () => {
+    const headers = new Headers({ 'Set-Cookie': 'proxy_session=unrelated; Secure; path=/' });
+    assert.equal(extractSessionCookie(headers), null);
+  });
+});
 
 describe('compareVersions', () => {
   test('orders dotted numeric versions', () => {

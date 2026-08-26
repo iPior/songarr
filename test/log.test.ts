@@ -41,6 +41,9 @@ describe('redactString', () => {
   test('redacts session cookies', () => {
     const output = redactString('Cookie: SID=abcdef123456; other=1');
     assert.ok(!output.includes('abcdef123456'));
+
+    const current = redactString('Cookie: QBT_SID_8701=current-session; other=1');
+    assert.ok(!current.includes('current-session'));
   });
 
   test('leaves ordinary messages untouched', () => {

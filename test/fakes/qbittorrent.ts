@@ -80,6 +80,7 @@ function isCrossSiteRequest(req: import('node:http').IncomingMessage, baseUrl: s
   return ![origin, referer].some((value) => value && value.startsWith(baseUrl));
 }
 
+const SESSION_COOKIE_NAME = 'QBT_SID_8080';
 const SESSION_ID = 'fake-session-id';
 
 export async function startFakeQbittorrent(options: FakeQbittorrentOptions): Promise<FakeQbittorrent> {
@@ -136,16 +137,16 @@ export async function startFakeQbittorrent(options: FakeQbittorrentOptions): Pro
       if (body.get('username') !== username || body.get('password') !== password) {
         return text(200, 'Fails.');
       }
-      res.writeHead(200, {
-        'Content-Type': 'text/plain',
-        'Set-Cookie': `SID=${SESSION_ID}; HttpOnly; path=/`,
+      // Current qBittorrent returns 204 and scopes the cookie name to the WebUI port.
+      res.writeHead(204, {
+        'Set-Cookie': `${SESSION_COOKIE_NAME}=${SESSION_ID}; HttpOnly; path=/`,
       });
-      res.end('Ok.');
+      res.end();
       return;
     }
 
     // Everything past login requires the session cookie.
-    if (!(req.headers.cookie ?? '').includes(`SID=${SESSION_ID}`)) {
+    if (!(req.headers.cookie ?? '').includes(`${SESSION_COOKIE_NAME}=${SESSION_ID}`)) {
       return text(403, 'Forbidden');
     }
 
