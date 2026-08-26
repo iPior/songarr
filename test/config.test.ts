@@ -29,6 +29,7 @@ describe('loadConfig', () => {
     assert.equal(config.preferredQuality, 'any');
     assert.equal(config.metadataTimeoutSec, 120);
     assert.equal(config.pollIntervalSec, 5);
+    assert.equal(config.ffprobePath, 'ffprobe');
     assert.equal(config.logLevel, 'info');
   });
 
@@ -90,6 +91,12 @@ describe('loadConfig', () => {
     clearSecrets();
   });
 
+  test('allows the ffprobe executable to be configured', () => {
+    const config = loadConfig(env({ FFPROBE_PATH: '/opt/ffmpeg/bin/ffprobe' }));
+    clearSecrets();
+    assert.equal(config.ffprobePath, '/opt/ffmpeg/bin/ffprobe');
+  });
+
   test('rejects a non-positive or non-integer timeout', () => {
     for (const value of ['0', '-5', 'abc', '1.5']) {
       assert.throws(() => loadConfig(env({ SONGARR_METADATA_TIMEOUT_SEC: value })), ConfigError, value);
@@ -126,9 +133,7 @@ describe('verifyPaths', () => {
 
   test('reports a missing root by name', async () => {
     const { readyRoot } = await roots();
-    const config = loadConfig(
-      env({ SONGARR_DOWNLOAD_ROOT: '/definitely/not/here', SONGARR_READY_ROOT: readyRoot }),
-    );
+    const config = loadConfig(env({ SONGARR_DOWNLOAD_ROOT: '/definitely/not/here', SONGARR_READY_ROOT: readyRoot }));
     clearSecrets();
     await assert.rejects(
       () => verifyPaths(config),
@@ -153,9 +158,7 @@ describe('verifyPaths', () => {
 
   test('demands a ready root unless the local checks are skipped', async () => {
     const { downloadRoot } = await roots();
-    const config = loadConfig(
-      env({ SONGARR_DOWNLOAD_ROOT: downloadRoot, SONGARR_READY_ROOT: undefined }),
-    );
+    const config = loadConfig(env({ SONGARR_DOWNLOAD_ROOT: downloadRoot, SONGARR_READY_ROOT: undefined }));
     clearSecrets();
 
     await assert.rejects(
@@ -167,9 +170,7 @@ describe('verifyPaths', () => {
 
   test('skipLocalChecks accepts a download root that does not exist on this machine', async () => {
     // The remote-stack case: the path is the download host's, not ours.
-    const config = loadConfig(
-      env({ SONGARR_DOWNLOAD_ROOT: '/downloads', SONGARR_READY_ROOT: undefined }),
-    );
+    const config = loadConfig(env({ SONGARR_DOWNLOAD_ROOT: '/downloads', SONGARR_READY_ROOT: undefined }));
     clearSecrets();
     await assert.doesNotReject(() => verifyPaths(config, { skipLocalChecks: true }));
   });
@@ -182,6 +183,9 @@ describe('verifyPaths', () => {
 
     const config = loadConfig(env({ SONGARR_DOWNLOAD_ROOT: downloadRoot, SONGARR_READY_ROOT: asFile }));
     clearSecrets();
-    await assert.rejects(() => verifyPaths(config), (error: ConfigError) => /not a directory/.test(error.message));
+    await assert.rejects(
+      () => verifyPaths(config),
+      (error: ConfigError) => /not a directory/.test(error.message),
+    );
   });
 });

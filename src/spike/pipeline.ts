@@ -16,12 +16,7 @@ import { probeAudio, type AudioProbe } from './ffprobe.ts';
 import { fileExtension, rankFiles, type ScoredFile, type TrackRequest } from './matching.ts';
 import { preferredExtensionFor, rankReleases, type QualityPreference } from './quality.ts';
 import { publishToReady, verifySource, type PublishResult } from './publish.ts';
-import {
-  buildSearchQuery,
-  ProwlarrError,
-  type ProwlarrClient,
-  type ProwlarrRelease,
-} from './prowlarr.ts';
+import { buildSearchQuery, ProwlarrError, type ProwlarrClient, type ProwlarrRelease } from './prowlarr.ts';
 import {
   FilePriority,
   isErrorState,
@@ -72,6 +67,8 @@ export interface PipelineInput {
   metadataTimeoutSec: number;
   pollIntervalSec: number;
   stallTimeoutSec: number;
+  /** Executable name or absolute path used to validate the completed audio. */
+  ffprobePath: string;
   /**
    * Stop once the selected file has finished downloading, skipping validation and the ready
    * copy. Used when Songarr runs somewhere that cannot see qBittorrent's download directory
@@ -233,7 +230,7 @@ export async function runPipeline(
     logger,
   });
 
-  const probe = await probeAudio(source.absolutePath);
+  const probe = await probeAudio(source.absolutePath, input.ffprobePath);
   logger.info('audio validated', {
     codec: probe.codec,
     format: probe.formatName,
@@ -322,9 +319,7 @@ async function selectRelease(
   return prompter.select('Select a release:', choices);
 }
 
-type TorrentSource =
-  | { kind: 'file'; bytes: Uint8Array }
-  | { kind: 'url'; url: string; isMagnet: boolean };
+type TorrentSource = { kind: 'file'; bytes: Uint8Array } | { kind: 'url'; url: string; isMagnet: boolean };
 
 /**
  * Prefer the raw `.torrent` bytes. A torrent added from a file already carries its file

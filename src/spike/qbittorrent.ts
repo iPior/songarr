@@ -285,11 +285,7 @@ export class QbittorrentClient {
     form.set(capabilities.addStoppedParam === 'stopped' ? 'paused' : 'stopped', 'true');
 
     if (options.torrentFile) {
-      form.set(
-        'torrents',
-        new Blob([options.torrentFile], { type: 'application/x-bittorrent' }),
-        'release.torrent',
-      );
+      form.set('torrents', new Blob([options.torrentFile], { type: 'application/x-bittorrent' }), 'release.torrent');
     } else if (options.url) {
       form.set('urls', options.url);
     } else {

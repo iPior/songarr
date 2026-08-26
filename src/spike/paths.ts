@@ -19,9 +19,28 @@ const ILLEGAL_CHARS = /[\u0000-\u001f\u007f<>:"/\\|?*]/g;
 
 /** Windows device names. Illegal there even with an extension, harmless to avoid on Linux. */
 const RESERVED_NAMES = new Set([
-  'con', 'prn', 'aux', 'nul',
-  'com1', 'com2', 'com3', 'com4', 'com5', 'com6', 'com7', 'com8', 'com9',
-  'lpt1', 'lpt2', 'lpt3', 'lpt4', 'lpt5', 'lpt6', 'lpt7', 'lpt8', 'lpt9',
+  'con',
+  'prn',
+  'aux',
+  'nul',
+  'com1',
+  'com2',
+  'com3',
+  'com4',
+  'com5',
+  'com6',
+  'com7',
+  'com8',
+  'com9',
+  'lpt1',
+  'lpt2',
+  'lpt3',
+  'lpt4',
+  'lpt5',
+  'lpt6',
+  'lpt7',
+  'lpt8',
+  'lpt9',
 ]);
 
 /** ext4 and most other filesystems cap a single name at 255 bytes, not characters. */
@@ -65,11 +84,16 @@ export function sanitizeSegment(raw: string, fallback = 'unknown'): string {
     .filter((token) => token.length > 0 && !/^\.+$/.test(token))
     .join(' ');
   // Leading dots hide files; trailing dots and spaces are silently dropped by Windows.
-  value = value.replace(/^\.+/, '').replace(/[. ]+$/, '').trim();
+  value = value
+    .replace(/^\.+/, '')
+    .replace(/[. ]+$/, '')
+    .trim();
 
   if (RESERVED_NAMES.has(value.toLowerCase())) value = `_${value}`;
 
-  value = truncateBytes(value, MAX_SEGMENT_BYTES).replace(/[. ]+$/, '').trim();
+  value = truncateBytes(value, MAX_SEGMENT_BYTES)
+    .replace(/[. ]+$/, '')
+    .trim();
 
   return value.length > 0 ? value : fallback;
 }

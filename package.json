@@ -3,18 +3,29 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@10.8.1",
   "description": "Technical spike proving the Songarr acquisition pipeline against Prowlarr and qBittorrent",
   "engines": {
     "node": ">=20.6"
   },
   "scripts": {
     "spike": "node --env-file-if-exists=.env --import tsx src/spike/run.ts",
+    "build": "esbuild src/spike/run.ts --bundle --platform=node --format=esm --outfile=dist/spike.js",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
     "test": "node --import tsx --test test/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@eslint/js": "^9.0.0",
     "@types/node": "^22.10.2",
+    "eslint": "^9.0.0",
+    "eslint-config-prettier": "^10.0.0",
+    "esbuild": "^0.25.0",
+    "prettier": "^3.0.0",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.0.0"
   }
 }

@@ -106,9 +106,10 @@ export async function startFakeProwlarr(options: FakeProwlarrOptions): Promise<F
     get downloads() {
       return downloads;
     },
-    close: () => new Promise<void>((resolve, reject) => {
-      server.close((error) => (error ? reject(error) : resolve()));
-    }),
+    close: () =>
+      new Promise<void>((resolve, reject) => {
+        server.close((error) => (error ? reject(error) : resolve()));
+      }),
   };
 }
 

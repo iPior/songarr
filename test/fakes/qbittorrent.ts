@@ -159,12 +159,29 @@ export async function startFakeQbittorrent(options: FakeQbittorrentOptions): Pro
 
       let result = torrents;
       if (category !== null) result = result.filter((t) => t.category === category);
-      if (tag !== null) result = result.filter((t) => t.tags.split(',').map((s) => s.trim()).includes(tag));
+      if (tag !== null)
+        result = result.filter((t) =>
+          t.tags
+            .split(',')
+            .map((s) => s.trim())
+            .includes(tag),
+        );
       if (hashes !== null) {
         const wanted = new Set(hashes.split('|').map((h) => h.toLowerCase()));
         result = result.filter((t) => wanted.has(t.hash.toLowerCase()));
       }
-      return json(200, result.map(({ files, metadataPending, ...rest }) => rest));
+      return json(
+        200,
+        result.map((torrent) => ({
+          hash: torrent.hash,
+          name: torrent.name,
+          state: torrent.state,
+          progress: torrent.progress,
+          category: torrent.category,
+          tags: torrent.tags,
+          save_path: torrent.save_path,
+        })),
+      );
     }
 
     if (route === '/api/v2/torrents/add') {
@@ -280,8 +297,9 @@ export async function startFakeQbittorrent(options: FakeQbittorrentOptions): Pro
       const torrent = findAdded();
       if (torrent) torrent.state = state;
     },
-    close: () => new Promise<void>((resolve, reject) => {
-      server.close((error) => (error ? reject(error) : resolve()));
-    }),
+    close: () =>
+      new Promise<void>((resolve, reject) => {
+        server.close((error) => (error ? reject(error) : resolve()));
+      }),
   };
 }

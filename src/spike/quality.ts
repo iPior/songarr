@@ -14,16 +14,7 @@ export function isQualityPreference(value: string): value is QualityPreference {
 }
 
 /** The container/bitrate we could infer from a release title. `unknown` when nothing matched. */
-export type InferredFormat =
-  | 'FLAC 24bit'
-  | 'FLAC'
-  | 'MP3 320'
-  | 'MP3 V0'
-  | 'MP3'
-  | 'AAC'
-  | 'ALAC'
-  | 'WAV'
-  | 'unknown';
+export type InferredFormat = 'FLAC 24bit' | 'FLAC' | 'MP3 320' | 'MP3 V0' | 'MP3' | 'AAC' | 'ALAC' | 'WAV' | 'unknown';
 
 /** The container extension we would prefer for a given quality preference. */
 export function preferredExtensionFor(preference: QualityPreference): string | null {
@@ -42,7 +33,10 @@ export function preferredExtensionFor(preference: QualityPreference): string | n
  * "FLAC 24bit 96kHz" also matches the plain FLAC pattern.
  */
 export function inferFormat(releaseTitle: string): InferredFormat {
-  const title = ` ${(releaseTitle ?? '').toLowerCase().replace(/[[\]()_,]/g, ' ').replace(/\s+/g, ' ')} `;
+  const title = ` ${(releaseTitle ?? '')
+    .toLowerCase()
+    .replace(/[[\]()_,]/g, ' ')
+    .replace(/\s+/g, ' ')} `;
 
   const has = (pattern: RegExp): boolean => pattern.test(title);
 

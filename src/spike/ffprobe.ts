@@ -69,13 +69,7 @@ export async function probeAudio(filePath: string, ffprobePath = 'ffprobe'): Pro
   try {
     const result = await execFileAsync(
       ffprobePath,
-      [
-        '-v', 'error',
-        '-print_format', 'json',
-        '-show_streams',
-        '-show_format',
-        filePath,
-      ],
+      ['-v', 'error', '-print_format', 'json', '-show_streams', '-show_format', filePath],
       { timeout: 30_000, maxBuffer: 4 * 1024 * 1024 },
     );
     stdout = result.stdout;
@@ -84,7 +78,7 @@ export async function probeAudio(filePath: string, ffprobePath = 'ffprobe'): Pro
     if (err.code === 'ENOENT') {
       throw new FfprobeError(
         'FFPROBE_NOT_FOUND',
-        `ffprobe was not found at "${ffprobePath}". Install ffmpeg or set SONGARR_FFPROBE_PATH.`,
+        `ffprobe was not found at "${ffprobePath}". Install ffmpeg or set FFPROBE_PATH.`,
       );
     }
     const detail = (err.stderr ?? err.message ?? '').trim().slice(0, 300);

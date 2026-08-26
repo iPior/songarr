@@ -29,8 +29,13 @@ async function workspace(): Promise<Workspace> {
 async function generateAudio(target: string, seconds = 1): Promise<void> {
   await mkdir(path.dirname(target), { recursive: true });
   await execFileAsync('ffmpeg', [
-    '-v', 'error', '-y',
-    '-f', 'lavfi', '-i', `sine=frequency=440:duration=${seconds}`,
+    '-v',
+    'error',
+    '-y',
+    '-f',
+    'lavfi',
+    '-i',
+    `sine=frequency=440:duration=${seconds}`,
     target,
   ]);
 }
@@ -167,10 +172,7 @@ describe('publishToReady', () => {
 
     const result = await publishToReady({ readyRoot, sourcePath, nameParts, requestId: 'req-1' });
 
-    assert.equal(
-      result.readyPath,
-      path.join(readyRoot, 'Daft Punk', 'Daft Punk - Around the World.flac'),
-    );
+    assert.equal(result.readyPath, path.join(readyRoot, 'Daft Punk', 'Daft Punk - Around the World.flac'));
     assert.equal(result.relativePath, path.join('Daft Punk', 'Daft Punk - Around the World.flac'));
 
     // The copy is byte-identical.
@@ -222,9 +224,7 @@ describe('publishToReady', () => {
     await mkdir(path.dirname(destination), { recursive: true });
     await writeFile(destination, 'PRE-EXISTING');
 
-    await assert.rejects(() =>
-      publishToReady({ readyRoot, sourcePath, nameParts, requestId: 'req-5' }),
-    );
+    await assert.rejects(() => publishToReady({ readyRoot, sourcePath, nameParts, requestId: 'req-5' }));
 
     assert.equal(await readFile(destination, 'utf8'), 'PRE-EXISTING');
     // And no scratch file was orphaned.

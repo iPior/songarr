@@ -1,7 +1,7 @@
 /**
  * Spike configuration, read entirely from the environment.
  *
- * Nothing secret is committed: `npm run spike` loads `.env` via Node's own
+ * Nothing secret is committed: `pnpm spike` loads `.env` via Node's own
  * `--env-file-if-exists`, and `.env` is gitignored. `.env.example` holds placeholders only.
  */
 
@@ -35,6 +35,8 @@ export interface SpikeConfig {
   pollIntervalSec: number;
   /** Give up on a download that has made no progress for this long. */
   stallTimeoutSec: number;
+  /** Executable name or absolute path used for audio validation. */
+  ffprobePath: string;
   logLevel: LogLevel;
 }
 
@@ -102,9 +104,7 @@ export function loadConfig(env: Env = process.env): SpikeConfig {
 
   const logLevelRaw = optional(env, 'SONGARR_LOG_LEVEL', 'info');
   if (!isLogLevel(logLevelRaw)) {
-    throw new ConfigError(
-      `SONGARR_LOG_LEVEL must be one of debug, info, warn, error - received "${logLevelRaw}"`,
-    );
+    throw new ConfigError(`SONGARR_LOG_LEVEL must be one of debug, info, warn, error - received "${logLevelRaw}"`);
   }
 
   const config: SpikeConfig = {
@@ -126,6 +126,7 @@ export function loadConfig(env: Env = process.env): SpikeConfig {
     metadataTimeoutSec: positiveInt(env, 'SONGARR_METADATA_TIMEOUT_SEC', 120),
     pollIntervalSec: positiveInt(env, 'SONGARR_POLL_INTERVAL_SEC', 5),
     stallTimeoutSec: positiveInt(env, 'SONGARR_STALL_TIMEOUT_SEC', 900),
+    ffprobePath: optional(env, 'FFPROBE_PATH', 'ffprobe'),
     logLevel: logLevelRaw,
   };
 

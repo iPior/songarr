@@ -104,8 +104,13 @@ async function harness(options: HarnessOptions = {}): Promise<Harness> {
         await writeFile(target, 'not audio at all\n'.repeat(200));
       } else {
         await execFileAsync('ffmpeg', [
-          '-v', 'error', '-y',
-          '-f', 'lavfi', '-i', 'sine=frequency=440:duration=1',
+          '-v',
+          'error',
+          '-y',
+          '-f',
+          'lavfi',
+          '-i',
+          'sine=frequency=440:duration=1',
           target,
         ]);
       }
@@ -157,6 +162,7 @@ async function harness(options: HarnessOptions = {}): Promise<Harness> {
     metadataTimeoutSec: 5,
     pollIntervalSec: 0.01 as number,
     stallTimeoutSec: 5,
+    ffprobePath: 'ffprobe',
     sourceRecheckDelayMs: 1,
   };
 
@@ -190,10 +196,7 @@ describe('acquisition pipeline (end to end)', () => {
     assert.equal(result.probe.codec, 'flac');
 
     assert.ok(result.published, 'a full run must publish');
-    assert.equal(
-      result.published.readyPath,
-      path.join(h.readyRoot, 'Daft Punk', 'Daft Punk - Around the World.flac'),
-    );
+    assert.equal(result.published.readyPath, path.join(h.readyRoot, 'Daft Punk', 'Daft Punk - Around the World.flac'));
     assert.ok((await stat(result.published.readyPath)).size > 0);
   });
 
@@ -424,10 +427,7 @@ describe('acquisition pipeline (end to end)', () => {
       selections: [acceptRecommended, (choices) => choices.length - 1],
     });
 
-    await assert.rejects(
-      () => runPipeline(h.input, { ...h.deps, prompter }),
-      PromptAbortedError,
-    );
+    await assert.rejects(() => runPipeline(h.input, { ...h.deps, prompter }), PromptAbortedError);
   });
 
   test('--skip-publish stops after the download, leaving the ready root untouched', async () => {

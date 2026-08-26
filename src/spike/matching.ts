@@ -18,9 +18,28 @@ export type SupportedAudioExtension = (typeof SUPPORTED_AUDIO_EXTENSIONS)[number
  * these and the filename advertises it, the file is very likely the wrong take.
  */
 const VERSION_TERMS = [
-  'live', 'remix', 'instrumental', 'radio edit', 'extended mix', 'extended', 'acoustic',
-  'karaoke', 'demo', 'edit', 'dub', 'club mix', 'vip mix', 'bootleg', 'mashup', 'rework',
-  'reprise', 'a cappella', 'acapella', 'intro', 'interlude', 'skit',
+  'live',
+  'remix',
+  'instrumental',
+  'radio edit',
+  'extended mix',
+  'extended',
+  'acoustic',
+  'karaoke',
+  'demo',
+  'edit',
+  'dub',
+  'club mix',
+  'vip mix',
+  'bootleg',
+  'mashup',
+  'rework',
+  'reprise',
+  'a cappella',
+  'acapella',
+  'intro',
+  'interlude',
+  'skit',
 ];
 
 export interface TrackRequest {
@@ -60,16 +79,18 @@ export interface ScoredFile<T extends TorrentFileLike = TorrentFileLike> {
  * Used for both duplicate comparison and filename matching, so it must be stable.
  */
 export function normalize(raw: string): string {
-  return (raw ?? '')
-    .normalize('NFKD')
-    // Strip the combining marks NFKD leaves behind, so "Beyoncé" folds to "beyonce".
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/&/g, ' and ')
-    .replace(/[_\-.]+/g, ' ')
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return (
+    (raw ?? '')
+      .normalize('NFKD')
+      // Strip the combining marks NFKD leaves behind, so "Beyoncé" folds to "beyonce".
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/&/g, ' and ')
+      .replace(/[_\-.]+/g, ' ')
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+  );
 }
 
 /** The lowercase extension of a torrent-relative path, including the leading dot. */
@@ -234,6 +255,9 @@ export function rankFiles<T extends TorrentFileLike>(files: readonly T[], reques
 }
 
 /** The single file to highlight, or null when the torrent holds no supported audio. */
-export function recommendFile<T extends TorrentFileLike>(files: readonly T[], request: TrackRequest): ScoredFile<T> | null {
+export function recommendFile<T extends TorrentFileLike>(
+  files: readonly T[],
+  request: TrackRequest,
+): ScoredFile<T> | null {
   return rankFiles(files, request).find((scored) => scored.isSupportedAudio) ?? null;
 }

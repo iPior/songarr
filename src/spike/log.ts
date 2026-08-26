@@ -17,7 +17,8 @@ const knownSecrets = new Set<string>();
 const SECRET_QUERY_KEYS = ['apikey', 'api_key', 'apitoken', 'token', 'passkey', 'password', 'rss_key', 'authkey'];
 
 /** Object keys whose values are never safe to log. */
-const SECRET_FIELD_KEYS = /^(password|api[-_]?key|apikey|token|passkey|authkey|cookie|set-cookie|sid|secret|authorization)$/i;
+const SECRET_FIELD_KEYS =
+  /^(password|api[-_]?key|apikey|token|passkey|authkey|cookie|set-cookie|sid|secret|authorization)$/i;
 
 export function registerSecret(secret: string | null | undefined): void {
   if (secret && secret.trim().length >= 4) knownSecrets.add(secret.trim());
@@ -49,17 +50,14 @@ export function redactString(input: string): string {
   }
 
   // Indexer download URLs embed a per-user token in the path; keep only origin + path shape.
-  out = out.replace(
-    /\bhttps?:\/\/[^\s"']*\/(?:download|dl|torrent)\/[^\s"']+/gi,
-    (match) => {
-      try {
-        const url = new URL(match);
-        return `${url.origin}/${url.pathname.split('/')[1] ?? ''}/[REDACTED]`;
-      } catch {
-        return '[REDACTED_URL]';
-      }
-    },
-  );
+  out = out.replace(/\bhttps?:\/\/[^\s"']*\/(?:download|dl|torrent)\/[^\s"']+/gi, (match) => {
+    try {
+      const url = new URL(match);
+      return `${url.origin}/${url.pathname.split('/')[1] ?? ''}/[REDACTED]`;
+    } catch {
+      return '[REDACTED_URL]';
+    }
+  });
 
   // Cookie headers, e.g. qBittorrent's SID.
   out = out.replace(/\b(SID|Cookie|Set-Cookie)\s*[:=]\s*[^;\s,]+/gi, '$1=[REDACTED]');

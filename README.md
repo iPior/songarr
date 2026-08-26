@@ -68,11 +68,11 @@ category and tag, wait for metadata, manual file selection, disable unwanted fil
 shared qBittorrent.
 
 ```bash
-npm install
+pnpm install
 cp .env.example .env   # fill in your own values; .env is gitignored
-npm run spike -- --check
-npm run spike -- --artist "Daft Punk" --title "Around the World"
-npm test
+pnpm spike -- --check
+pnpm spike -- --artist "Daft Punk" --title "Around the World"
+pnpm test
 ```
 
 See [docs/spike.md](docs/spike.md) for setup, what the spike established about the Prowlarr and
@@ -89,4 +89,3 @@ The current focus is validating the product design and implementing the smallest
 ## Responsible use
 
 Songarr is intended for material that the user is authorized to access and download. Users are responsible for complying with applicable laws and the terms of the services and sources they configure.
-

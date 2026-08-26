@@ -1,7 +1,7 @@
 /**
  * Spike CLI entry point.
  *
- *   npm run spike -- --artist "Daft Punk" --title "Around the World" --version "Radio Edit"
+ *   pnpm spike -- --artist "Daft Punk" --title "Around the World" --version "Radio Edit"
  *
  * See docs/spike.md for setup and what this does and does not prove.
  */
@@ -21,7 +21,7 @@ const USAGE = `
 Songarr acquisition-pipeline spike
 
 Usage:
-  npm run spike -- --artist <artist> --title <title> [options]
+  pnpm spike -- --artist <artist> --title <title> [options]
 
 Options:
   --artist <name>      Required. Requested artist.
@@ -92,7 +92,9 @@ async function checkConnections(
   skipPublish: boolean,
 ): Promise<void> {
   const status = await prowlarr.systemStatus();
-  process.stdout.write(`Prowlarr    ok  ${config.prowlarr.baseUrl} (${status.appName ?? 'Prowlarr'} ${status.version})\n`);
+  process.stdout.write(
+    `Prowlarr    ok  ${config.prowlarr.baseUrl} (${status.appName ?? 'Prowlarr'} ${status.version})\n`,
+  );
 
   await qbittorrent.login();
   const [appVersion, capabilities] = [await qbittorrent.appVersion(), await qbittorrent.getCapabilities()];
@@ -223,6 +225,7 @@ async function main(): Promise<number> {
         metadataTimeoutSec: config.metadataTimeoutSec,
         pollIntervalSec: config.pollIntervalSec,
         stallTimeoutSec: config.stallTimeoutSec,
+        ffprobePath: config.ffprobePath,
         skipPublish: options.skipPublish,
       },
       { prowlarr, qbittorrent, prompter, logger },

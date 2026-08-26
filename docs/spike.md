@@ -21,7 +21,7 @@ MVP deliberately leaves to a human:
 5. Wait for the torrent's file list.
 6. **Ask the user to confirm the audio file**, with a scored recommendation and its reasons.
 7. Set every other file to do-not-download, enable the chosen one, and verify the readback.
-8. Start the torrent and monitor the *selected file's* progress.
+8. Start the torrent and monitor the _selected file's_ progress.
 9. Resolve the completed file safely, confirm it is stable, and validate it with `ffprobe`.
 10. Copy it to `<ready>/.processing/`, then atomically rename into
     `<ready>/<Artist>/<Artist> - <Title> (<Version>).<ext>`.
@@ -31,14 +31,15 @@ The qBittorrent payload is never moved or deleted, so seeding continues.
 ## Requirements
 
 - Node.js 20.6 or newer (the PRD targets 22 LTS; the spike is compatible with both).
-- `ffprobe` on `PATH` (`ffmpeg` package on most distributions).
+- `ffprobe` on `PATH` (`ffmpeg` package on most distributions), or its location set with
+  `FFPROBE_PATH`.
 - A reachable Prowlarr with at least one music-capable indexer.
 - A reachable qBittorrent Web UI.
 
 ## Setup
 
 ```bash
-npm install
+pnpm install
 cp .env.example .env
 # edit .env - see the comments in that file
 ```
@@ -59,7 +60,7 @@ with `SOURCE_MISSING` and a message saying exactly that.
 Check connectivity, credentials and path permissions without touching anything:
 
 ```bash
-npm run spike -- --check
+pnpm spike -- --check
 ```
 
 ```
@@ -71,8 +72,8 @@ Paths       ok  downloads=/data/downloads ready=/data/ready
 Then run the pipeline:
 
 ```bash
-npm run spike -- --artist "Daft Punk" --title "Around the World"
-npm run spike -- --artist "Daft Punk" --title "Around the World" --version "Radio Edit" --quality flac
+pnpm spike -- --artist "Daft Punk" --title "Around the World"
+pnpm spike -- --artist "Daft Punk" --title "Around the World" --version "Radio Edit" --quality flac
 ```
 
 Selection prompts are on stdout and logs on stderr, so `2>/dev/null` gives a clean interactive
@@ -86,8 +87,8 @@ cannot: they open the finished file, which only exists where qBittorrent wrote i
 stops after the download instead of failing at validation:
 
 ```bash
-npm run spike -- --check --skip-publish
-npm run spike -- --artist "Daft Punk" --title "Around the World" --skip-publish
+pnpm spike -- --check --skip-publish
+pnpm spike -- --artist "Daft Punk" --title "Around the World" --skip-publish
 ```
 
 In this mode `SONGARR_DOWNLOAD_ROOT` is still sent to qBittorrent as its save path, so it must
@@ -107,8 +108,11 @@ that is cancel-flow work for the MVP.
 ## Tests
 
 ```bash
-npm test        # 158 tests, no network and no .env required
-npm run typecheck
+pnpm format:check
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
 ```
 
 The unit tests cover the logic the MVP must not get wrong: path sanitising and root
@@ -162,7 +166,7 @@ rule so this cannot regress unnoticed; with the headers removed, all 17 end-to-e
 
 **Three-way ownership is worth the strictness.** Category alone collides with Songarr's own
 other requests; the tag alone would be enough but cannot be verified before the hash resolves.
-Requiring category *and* tag *and* (once known) hash costs nothing and makes "never touch
+Requiring category _and_ tag _and_ (once known) hash costs nothing and makes "never touch
 someone else's torrent" a single enforceable choke point.
 
 ## What this is not
@@ -181,16 +185,16 @@ Deliberately absent, all Phase 1/4/5 work in the PRD:
 
 These are written to be lifted more or less directly into Phase 3/4:
 
-| Module | Why |
-|---|---|
-| `src/spike/paths.ts` | Filename sanitising and root containment. Security-relevant, well tested. |
-| `src/spike/ownership.ts` | The three-way ownership guard; the single place the isolation rule lives. |
-| `src/spike/matching.ts` | Deterministic, explainable file scoring with confidence labels. |
-| `src/spike/quality.ts` | Format inference and preference ranking. |
-| `src/spike/ffprobe.ts` | Audio validation, including the probe-score check above. |
-| `src/spike/publish.ts` | Copy-then-atomic-rename with overwrite refusal. |
-| `src/spike/qbittorrent.ts` | The version compatibility layer, minus the polling. |
-| `test/fakes/` | Reusable fake services for the MVP's integration tests. |
+| Module                     | Why                                                                       |
+| -------------------------- | ------------------------------------------------------------------------- |
+| `src/spike/paths.ts`       | Filename sanitising and root containment. Security-relevant, well tested. |
+| `src/spike/ownership.ts`   | The three-way ownership guard; the single place the isolation rule lives. |
+| `src/spike/matching.ts`    | Deterministic, explainable file scoring with confidence labels.           |
+| `src/spike/quality.ts`     | Format inference and preference ranking.                                  |
+| `src/spike/ffprobe.ts`     | Audio validation, including the probe-score check above.                  |
+| `src/spike/publish.ts`     | Copy-then-atomic-rename with overwrite refusal.                           |
+| `src/spike/qbittorrent.ts` | The version compatibility layer, minus the polling.                       |
+| `test/fakes/`              | Reusable fake services for the MVP's integration tests.                   |
 
 `src/spike/pipeline.ts` is the one module that should **not** carry over unchanged: its
 sequential polling loop becomes the persisted reconciler described in PRD section 15, driven by

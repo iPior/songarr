@@ -69,9 +69,7 @@ export function assertOwned(torrent: OwnableTorrent, claim: OwnershipClaim): Own
     );
   }
   if (claim.hash && !sameHash(torrent.hash, claim.hash)) {
-    throw new OwnershipError(
-      `Refusing to touch torrent ${torrent.hash}: expected hash ${claim.hash}`,
-    );
+    throw new OwnershipError(`Refusing to touch torrent ${torrent.hash}: expected hash ${claim.hash}`);
   }
   return torrent;
 }

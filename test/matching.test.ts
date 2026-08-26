@@ -144,7 +144,7 @@ describe('scoreAudioFile', () => {
   });
 
   test('matches through punctuation differences in the title', () => {
-    const punctuated: TrackRequest = { artist: 'Panic! at the Disco', title: "I Write Sins Not Tragedies" };
+    const punctuated: TrackRequest = { artist: 'Panic! at the Disco', title: 'I Write Sins Not Tragedies' };
     const scored = scoreAudioFile(file(0, 'Panic At The Disco - I Write Sins, Not Tragedies.mp3'), punctuated);
     assert.ok(scored.score > 40);
   });
