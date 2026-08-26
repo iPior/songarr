@@ -142,6 +142,8 @@ export async function runPipeline(
   // ---- 3. Add the torrent, stopped -----------------------------------------------------
   announce('adding_torrent', `Adding to qBittorrent under category "${input.category}", tag ${tag}`);
 
+  await qbittorrent.ensureCategory(input.category, input.downloadRoot);
+
   // Idempotency guard (PRD 20.2): if a previous attempt already added this tag, adopt it.
   const preexisting = await qbittorrent.findOwnedTorrent(claim);
   if (preexisting) {

@@ -213,6 +213,10 @@ describe('acquisition pipeline (end to end)', () => {
     assert.ok(h.prowlarr.downloads > 0, 'the .torrent file should have been fetched by Songarr');
     assert.ok(h.qbittorrent.calls.includes('add:file'), 'the torrent should be uploaded as bytes');
     assert.ok(h.qbittorrent.calls.includes('add:stopped'), 'the torrent must be added stopped');
+    assert.ok(
+      h.qbittorrent.calls.indexOf('createCategory') < h.qbittorrent.calls.indexOf('add'),
+      'the Songarr category must be created before the torrent is added',
+    );
 
     // The ordering guarantee: every filePrio call precedes the first start.
     const firstStart = h.qbittorrent.calls.indexOf('start');

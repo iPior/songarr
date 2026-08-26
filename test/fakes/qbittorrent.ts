@@ -90,6 +90,7 @@ export async function startFakeQbittorrent(options: FakeQbittorrentOptions): Pro
   const pollsToComplete = options.pollsToComplete ?? 2;
 
   const torrents: FakeTorrent[] = [...(options.seedTorrents ?? [])];
+  const categories = new Map<string, string>();
   const calls: string[] = [];
   let addedHash: string | null = null;
   let progressPolls = 0;
@@ -153,6 +154,19 @@ export async function startFakeQbittorrent(options: FakeQbittorrentOptions): Pro
     if (route === '/api/v2/app/webapiVersion') return text(200, webApiVersion);
     if (route === '/api/v2/app/version') return text(200, options.appVersion ?? 'v5.0.4');
 
+    if (route === '/api/v2/torrents/categories') {
+      return json(200, Object.fromEntries([...categories].map(([name, savePath]) => [name, { name, savePath }])));
+    }
+
+    if (route === '/api/v2/torrents/createCategory') {
+      calls.push('createCategory');
+      const body = new URLSearchParams((await readBody(req)).toString());
+      const category = body.get('category') ?? '';
+      if (!category) return text(400, 'Category name is empty');
+      categories.set(category, body.get('savePath') ?? '');
+      return text(200, 'Ok.');
+    }
+
     if (route === '/api/v2/torrents/info') {
       const category = url.searchParams.get('category');
       const tag = url.searchParams.get('tag');
@@ -206,7 +220,7 @@ export async function startFakeQbittorrent(options: FakeQbittorrentOptions): Pro
         name: 'Added Release',
         state: stopped ? 'stoppedDL' : 'downloading',
         progress: 0,
-        category: field('category') ?? '',
+        category: categories.has(field('category') ?? '') ? (field('category') ?? '') : '',
         tags: field('tags') ?? '',
         save_path: field('savepath') ?? options.savePath,
         files: options.addedFiles.map((file) => ({ ...file })),

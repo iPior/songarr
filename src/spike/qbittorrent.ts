@@ -57,6 +57,11 @@ export interface TorrentFile {
   priority: number;
 }
 
+export interface TorrentCategory {
+  name: string;
+  savePath: string;
+}
+
 export interface Capabilities {
   webApiVersion: string;
   /** WebAPI >= 2.11: `start`/`stop` instead of `resume`/`pause`. */
@@ -238,6 +243,32 @@ export class QbittorrentClient {
   async appVersion(): Promise<string> {
     const response = await this.call('/app/version');
     return (await response.text()).trim();
+  }
+
+  /** Ensure the configured Songarr category exists before adding a torrent under it. */
+  async ensureCategory(category: string, savePath: string): Promise<void> {
+    const response = await this.call('/torrents/categories');
+    const body = (await response.json()) as unknown;
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      throw new QbittorrentError('QBITTORRENT_BAD_RESPONSE', '/torrents/categories did not return an object');
+    }
+
+    if (Object.hasOwn(body, category)) return;
+
+    await this.call('/torrents/createCategory', {
+      method: 'POST',
+      body: new URLSearchParams({ category, savePath }),
+    });
+
+    const verifyResponse = await this.call('/torrents/categories');
+    const verified = (await verifyResponse.json()) as unknown;
+    if (!verified || typeof verified !== 'object' || Array.isArray(verified) || !Object.hasOwn(verified, category)) {
+      throw new QbittorrentError(
+        'QBITTORRENT_CATEGORY_FAILED',
+        `qBittorrent did not create the required category "${category}"`,
+      );
+    }
+    this.logger.info('created torrent category', { category, savePath });
   }
 
   /** Detected once and cached; every version-dependent call reads it. */
