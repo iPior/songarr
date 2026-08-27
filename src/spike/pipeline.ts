@@ -300,7 +300,7 @@ async function selectRelease(
 
   const choices: Choice<ProwlarrRelease>[] = ranked.map(({ release, format }, position) => {
     // Usenet results are listed for transparency but the spike only drives qBittorrent.
-    const usable = release.protocol === 'torrent' && Boolean(release.downloadUrl || isMagnetUrl(release.magnetUrl));
+    const usable = release.protocol === 'torrent' && Boolean(release.downloadUrl || release.magnetUrl);
     return {
       value: release,
       label: [
@@ -339,11 +339,14 @@ async function resolveTorrentSource(
   logger: Logger,
 ): Promise<TorrentSource> {
   let fetchError: ProwlarrError | null = null;
+  const httpCandidates = [release.downloadUrl, release.magnetUrl]
+    .filter((url): url is string => Boolean(url) && !isMagnetUrl(url))
+    .filter((url, index, all) => all.indexOf(url) === index);
 
-  if (release.downloadUrl) {
+  for (const sourceUrl of httpCandidates) {
     for (let attempt = 1; attempt <= 3; attempt += 1) {
       try {
-        const fetched = await prowlarr.fetchTorrentFile(release);
+        const fetched = await prowlarr.fetchTorrentFile(release, sourceUrl);
         if (fetched.kind === 'magnet') {
           logger.info('Prowlarr download endpoint redirected to a magnet link');
           return { kind: 'url', url: fetched.url, isMagnet: true };

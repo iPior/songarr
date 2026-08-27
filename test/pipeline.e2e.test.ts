@@ -130,7 +130,9 @@ async function harness(options: HarnessOptions = {}): Promise<Harness> {
         ? [
             fakeRelease(baseUrl, {
               downloadUrl: null,
-              magnetUrl: 'magnet:?xt=urn:btih:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&dn=Homework',
+              magnetUrl: options.httpMagnetUrl
+                ? `${baseUrl}/download/guid-1`
+                : 'magnet:?xt=urn:btih:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&dn=Homework',
             }),
           ]
         : [
@@ -317,6 +319,18 @@ describe('acquisition pipeline (end to end)', () => {
     assert.ok(h.prowlarr.downloads > 0, 'Songarr follows the selected Prowlarr download endpoint');
     assert.ok(h.qbittorrent.calls.includes('add:url'), 'the redirected magnet is submitted as a URL');
     assert.ok(h.qbittorrent.calls.includes('stop'), 'the magnet is stopped again after metadata arrives');
+  });
+
+  test('resolves an HTTP endpoint supplied in Prowlarr magnetUrl before submission', async () => {
+    const h = await harness({ magnetOnly: true, httpMagnetUrl: true, downloadRedirectsToMagnet: true });
+
+    await runPipeline(h.input, {
+      ...h.deps,
+      prompter: createScriptedPrompter({ selections: [acceptRecommended, acceptRecommended] }),
+    });
+
+    assert.ok(h.prowlarr.downloads > 0, 'Songarr resolves the endpoint itself');
+    assert.ok(h.qbittorrent.calls.includes('add:url'), 'only the resolved magnet reaches qBittorrent');
   });
 
   test('retries a transient Prowlarr fetch before submitting the resolved magnet', async () => {

@@ -139,14 +139,14 @@ export class ProwlarrClient {
    * added from a file already carries its metadata - which is what lets the torrent stay
    * stopped while the user picks a file. See docs/spike.md.
    */
-  async fetchTorrentFile(release: ProwlarrRelease): Promise<TorrentFetchResult> {
-    if (!release.downloadUrl) {
+  async fetchTorrentFile(release: ProwlarrRelease, sourceUrl = release.downloadUrl): Promise<TorrentFetchResult> {
+    if (!sourceUrl) {
       throw new ProwlarrError('RELEASE_HAS_NO_TORRENT_FILE', `Release "${release.title}" has no .torrent URL`);
     }
 
     this.logger.debug('fetching torrent file', { release: release.title });
 
-    let currentUrl = release.downloadUrl;
+    let currentUrl = sourceUrl;
     let response: Response | null = null;
 
     // Prowlarr may answer its /download endpoint with a magnet redirect. Fetch cannot follow
