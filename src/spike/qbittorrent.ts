@@ -317,7 +317,14 @@ export class QbittorrentClient {
     if (options.torrentFile) {
       form.set('torrents', new Blob([options.torrentFile], { type: 'application/x-bittorrent' }), 'release.torrent');
     } else if (options.url) {
-      form.set('urls', options.url);
+      const url = options.url.trim();
+      if (!url.toLowerCase().startsWith('magnet:')) {
+        throw new QbittorrentError(
+          'ADD_TORRENT_UNSAFE_URL',
+          'Only magnet links may be submitted by URL; fetch HTTP torrent URLs through Prowlarr first',
+        );
+      }
+      form.set('urls', url);
     } else {
       throw new QbittorrentError('ADD_TORRENT_NO_SOURCE', 'Neither torrent bytes nor a URL were provided');
     }

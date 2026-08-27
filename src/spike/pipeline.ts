@@ -300,7 +300,7 @@ async function selectRelease(
 
   const choices: Choice<ProwlarrRelease>[] = ranked.map(({ release, format }, position) => {
     // Usenet results are listed for transparency but the spike only drives qBittorrent.
-    const usable = release.protocol === 'torrent' && Boolean(release.downloadUrl || release.magnetUrl);
+    const usable = release.protocol === 'torrent' && Boolean(release.downloadUrl || isMagnetUrl(release.magnetUrl));
     return {
       value: release,
       label: [
@@ -322,6 +322,10 @@ async function selectRelease(
 }
 
 type TorrentSource = { kind: 'file'; bytes: Uint8Array } | { kind: 'url'; url: string; isMagnet: boolean };
+
+function isMagnetUrl(value: string | null): value is string {
+  return value !== null && value.trim().toLowerCase().startsWith('magnet:');
+}
 
 /**
  * Prefer the raw `.torrent` bytes. A torrent added from a file already carries its file
@@ -360,8 +364,8 @@ async function resolveTorrentSource(
     }
   }
 
-  const url = release.magnetUrl;
-  if (!url) {
+  const url = release.magnetUrl?.trim() ?? null;
+  if (!isMagnetUrl(url)) {
     throw new PipelineError(
       'TORRENT_SOURCE_UNAVAILABLE',
       `Songarr could not retrieve torrent bytes or a magnet for "${release.title}"` +
@@ -370,15 +374,12 @@ async function resolveTorrentSource(
     );
   }
 
-  const isMagnet = url.startsWith('magnet:');
-  if (isMagnet) {
-    logger.warn(
-      'this release is magnet-only: qBittorrent cannot fetch metadata while stopped, so the ' +
-        'torrent will be started briefly to retrieve the file list, then stopped again. ' +
-        'A small amount of unwanted data may be downloaded during that window.',
-    );
-  }
-  return { kind: 'url', url, isMagnet };
+  logger.warn(
+    'this release is magnet-only: qBittorrent cannot fetch metadata while stopped, so the ' +
+      'torrent will be started briefly to retrieve the file list, then stopped again. ' +
+      'A small amount of unwanted data may be downloaded during that window.',
+  );
+  return { kind: 'url', url, isMagnet: true };
 }
 
 /** Poll `/torrents/info?tag=` until the newly added torrent appears (PRD 9.4). */

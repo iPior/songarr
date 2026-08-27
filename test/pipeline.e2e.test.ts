@@ -51,6 +51,8 @@ interface HarnessOptions {
   files?: FakeFile[];
   magnetOnly?: boolean;
   downloadReturnsHtml?: boolean;
+  /** Model Prowlarr returning an HTTP redirect endpoint in its misleading magnetUrl field. */
+  httpMagnetUrl?: boolean;
   downloadRedirectsToMagnet?: boolean;
   downloadFailuresBeforeSuccess?: number;
   webApiVersion?: string;
@@ -137,8 +139,11 @@ async function harness(options: HarnessOptions = {}): Promise<Harness> {
               title: 'Daft Punk - Homework (1997) [MP3 320]',
               guid: 'guid-mp3',
               seeders: 200,
+              magnetUrl: options.httpMagnetUrl ? `${baseUrl}/download/guid-mp3` : null,
             }),
-            fakeRelease(baseUrl),
+            fakeRelease(baseUrl, {
+              magnetUrl: options.httpMagnetUrl ? `${baseUrl}/download/guid-1` : null,
+            }),
           ],
   });
 
@@ -343,6 +348,39 @@ describe('acquisition pipeline (end to end)', () => {
     assert.ok(h.prowlarr.downloads > 0, 'the fetch was attempted');
     assert.ok(!h.qbittorrent.calls.includes('add:file'), 'HTML must not be uploaded as torrent bytes');
     assert.ok(!h.qbittorrent.calls.includes('add:url'), 'the inaccessible Prowlarr URL must not be submitted');
+  });
+
+  test('rejects an HTTP value mislabeled by Prowlarr as a magnet URL', async () => {
+    const h = await harness({ downloadReturnsHtml: true, httpMagnetUrl: true });
+
+    await assert.rejects(
+      () =>
+        runPipeline(h.input, {
+          ...h.deps,
+          prompter: createScriptedPrompter({ selections: [acceptRecommended, acceptRecommended] }),
+        }),
+      (error: { code?: string }) => error.code === 'TORRENT_SOURCE_UNAVAILABLE',
+    );
+
+    assert.ok(!h.qbittorrent.calls.includes('add:url'), 'an HTTP pseudo-magnet must not reach qBittorrent');
+  });
+
+  test('qBittorrent client defensively refuses non-magnet URL submissions', async () => {
+    const h = await harness();
+
+    await assert.rejects(
+      () =>
+        h.deps.qbittorrent.addTorrent({
+          category: 'songarr',
+          tag: 'songarr-request-test',
+          savePath: h.downloadRoot,
+          torrentFile: null,
+          url: 'http://prowlarr.internal/download/release',
+        }),
+      (error: { code?: string }) => error.code === 'ADD_TORRENT_UNSAFE_URL',
+    );
+
+    assert.ok(!h.qbittorrent.calls.includes('add'), 'the rejected URL must not reach the API');
   });
 
   test('works against a qBittorrent 4.x WebAPI using pause/resume', async () => {
