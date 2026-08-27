@@ -334,26 +334,39 @@ async function resolveTorrentSource(
   prowlarr: ProwlarrClient,
   logger: Logger,
 ): Promise<TorrentSource> {
+  let fetchError: ProwlarrError | null = null;
+
   if (release.downloadUrl) {
-    try {
-      const fetched = await prowlarr.fetchTorrentFile(release);
-      if (fetched.kind === 'magnet') {
-        logger.info('Prowlarr download endpoint redirected to a magnet link');
-        return { kind: 'url', url: fetched.url, isMagnet: true };
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      try {
+        const fetched = await prowlarr.fetchTorrentFile(release);
+        if (fetched.kind === 'magnet') {
+          logger.info('Prowlarr download endpoint redirected to a magnet link');
+          return { kind: 'url', url: fetched.url, isMagnet: true };
+        }
+        return fetched;
+      } catch (error) {
+        if (!(error instanceof ProwlarrError)) throw error;
+        fetchError = error;
+
+        const retryable = error.code === 'TORRENT_FETCH_FAILED';
+        if (retryable && attempt < 3) {
+          logger.warn(`Prowlarr torrent fetch failed; retrying (${attempt}/3)`, { code: error.code });
+          await delay(attempt * 500);
+          continue;
+        }
+        break;
       }
-      return fetched;
-    } catch (error) {
-      if (!(error instanceof ProwlarrError)) throw error;
-      logger.warn(`could not fetch the .torrent file (${error.code}); falling back to a URL`);
     }
   }
 
-  const url = release.magnetUrl ?? release.downloadUrl;
+  const url = release.magnetUrl;
   if (!url) {
     throw new PipelineError(
-      'RELEASE_NOT_DOWNLOADABLE',
-      `Release "${release.title}" exposes neither a .torrent file nor a magnet link`,
-      'Choose a different release.',
+      'TORRENT_SOURCE_UNAVAILABLE',
+      `Songarr could not retrieve torrent bytes or a magnet for "${release.title}"` +
+        (fetchError ? ` (${fetchError.code})` : ''),
+      'Retry once in case the indexer was temporarily unavailable, or choose a different release.',
     );
   }
 

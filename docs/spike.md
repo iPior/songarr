@@ -141,8 +141,8 @@ in that window. **The MVP should surface this to the user rather than hiding it*
 files still at default priority the torrent may fetch anything during the metadata window.
 
 **An indexer may answer a `.torrent` request with an HTML error page.** A bencoded torrent
-always starts with `d`; anything else is rejected and the flow falls back to adding by URL,
-rather than uploading a rate-limit page to qBittorrent as though it were a torrent.
+always starts with `d`; anything else is rejected rather than uploading a rate-limit page or
+handing an authenticated Prowlarr URL to qBittorrent as though it were a torrent.
 
 **`ffprobe` reporting an audio stream is not sufficient validation.** A text file named
 `fake.flac` probes as "raw FLAC" - one audio stream, codec `flac` - purely on the strength of

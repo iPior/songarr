@@ -35,6 +35,8 @@ export interface FakeProwlarrOptions {
   downloadReturnsHtml?: boolean;
   /** Redirect the download endpoint to a magnet, as some Prowlarr indexers do. */
   downloadRedirectsToMagnet?: boolean;
+  /** Return HTTP 503 this many times before serving the configured download response. */
+  downloadFailuresBeforeSuccess?: number;
   version?: string;
 }
 
@@ -81,6 +83,11 @@ export async function startFakeProwlarr(options: FakeProwlarrOptions): Promise<F
 
     if (url.pathname.startsWith('/download/')) {
       downloads += 1;
+      if (downloads <= (options.downloadFailuresBeforeSuccess ?? 0)) {
+        res.writeHead(503, { 'Content-Type': 'text/plain' });
+        res.end('Indexer temporarily unavailable');
+        return;
+      }
       if (options.downloadRedirectsToMagnet) {
         res.writeHead(302, {
           Location: 'magnet:?xt=urn:btih:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&dn=Homework',

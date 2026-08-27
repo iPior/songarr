@@ -52,6 +52,7 @@ interface HarnessOptions {
   magnetOnly?: boolean;
   downloadReturnsHtml?: boolean;
   downloadRedirectsToMagnet?: boolean;
+  downloadFailuresBeforeSuccess?: number;
   webApiVersion?: string;
   pollsToComplete?: number;
   /** Skip materialising the completed file, to test the missing-source path. */
@@ -121,6 +122,7 @@ async function harness(options: HarnessOptions = {}): Promise<Harness> {
   const prowlarr = await startFakeProwlarr({
     downloadReturnsHtml: options.downloadReturnsHtml ?? false,
     downloadRedirectsToMagnet: options.downloadRedirectsToMagnet ?? false,
+    downloadFailuresBeforeSuccess: options.downloadFailuresBeforeSuccess ?? 0,
     releases: (baseUrl) =>
       options.magnetOnly
         ? [
@@ -312,19 +314,35 @@ describe('acquisition pipeline (end to end)', () => {
     assert.ok(h.qbittorrent.calls.includes('stop'), 'the magnet is stopped again after metadata arrives');
   });
 
-  test('never uploads a non-bencoded .torrent response as torrent bytes', async () => {
-    const h = await harness({ downloadReturnsHtml: true });
+  test('retries a transient Prowlarr fetch before submitting the resolved magnet', async () => {
+    const h = await harness({ downloadRedirectsToMagnet: true, downloadFailuresBeforeSuccess: 1 });
 
     await runPipeline(h.input, {
       ...h.deps,
       prompter: createScriptedPrompter({ selections: [acceptRecommended, acceptRecommended] }),
     });
 
-    // The indexer answered the .torrent request with an HTML page. Songarr must detect that
-    // and hand qBittorrent the URL instead of uploading the HTML as a torrent.
+    assert.equal(h.prowlarr.downloads, 2);
+    assert.ok(h.qbittorrent.calls.includes('add:url'));
+  });
+
+  test('rejects a non-bencoded response instead of giving qBittorrent an inaccessible URL', async () => {
+    const h = await harness({ downloadReturnsHtml: true });
+
+    await assert.rejects(
+      () =>
+        runPipeline(h.input, {
+          ...h.deps,
+          prompter: createScriptedPrompter({ selections: [acceptRecommended, acceptRecommended] }),
+        }),
+      (error: { code?: string }) => error.code === 'TORRENT_SOURCE_UNAVAILABLE',
+    );
+
+    // The indexer answered with HTML. Neither the HTML nor its authenticated Prowlarr URL
+    // may be handed to qBittorrent.
     assert.ok(h.prowlarr.downloads > 0, 'the fetch was attempted');
     assert.ok(!h.qbittorrent.calls.includes('add:file'), 'HTML must not be uploaded as torrent bytes');
-    assert.ok(h.qbittorrent.calls.includes('add:url'), 'it should fall back to adding by URL');
+    assert.ok(!h.qbittorrent.calls.includes('add:url'), 'the inaccessible Prowlarr URL must not be submitted');
   });
 
   test('works against a qBittorrent 4.x WebAPI using pause/resume', async () => {
